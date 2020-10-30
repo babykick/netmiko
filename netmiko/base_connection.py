@@ -89,6 +89,7 @@ class BaseConnection(object):
         encoding="ascii",
         sock=None,
         auto_connect=True,
+        remote_conn=None
     ):
         """
         Initialize attributes for establishing connection to target device.
@@ -219,7 +220,7 @@ class BaseConnection(object):
                 part of the object creation (default: True).
         :type auto_connect: bool
         """
-        self.remote_conn = None
+        self.remote_conn = remote_conn
 
         self.TELNET_RETURN = "\r\n"
         if default_enter is None:
@@ -685,7 +686,7 @@ class BaseConnection(object):
         self,
         pri_prompt_terminator=r"#\s*$",
         alt_prompt_terminator=r">\s*$",
-        username_pattern=r"(?:user:|username|login|user name)",
+        username_pattern=r"(?:user:|sername|login|user name)",
         pwd_pattern=r"assword",
         delay_factor=1,
         max_loops=20,
@@ -904,12 +905,12 @@ class BaseConnection(object):
         :type height: int
         """
         if self.protocol == "telnet":
-            self.remote_conn = telnetlib.Telnet(
+            self.remote_conn = self.remote_conn or telnetlib.Telnet(
                 self.host, port=self.port, timeout=self.timeout
             )
             self.telnet_login()
         elif self.protocol == "serial":
-            self.remote_conn = serial.Serial(**self.serial_settings)
+            self.remote_conn = self.remote_conn or serial.Serial(**self.serial_settings)
             self.serial_login()
         elif self.protocol == "ssh":
             ssh_connect_params = self._connect_params_dict()
@@ -970,13 +971,15 @@ Device settings: {self.device_type} {self.host}:{self.port}
                 print(f"SSH connection established to {self.host}:{self.port}")
 
             # Use invoke_shell to establish an 'interactive session'
-            self.remote_conn = self.remote_conn_pre.invoke_shell(
-                term="vt100", width=width, height=height
-            )
+            if self.remote_conn is None:
+                self.remote_conn = self.remote_conn_pre.invoke_shell(
+                    term="vt100", width=width, height=height
+                )
 
-            self.remote_conn.settimeout(self.blocking_timeout)
-            if self.keepalive:
-                self.remote_conn.transport.set_keepalive(self.keepalive)
+                self.remote_conn.settimeout(self.blocking_timeout)
+                if self.keepalive:
+                    self.remote_conn.transport.set_keepalive(self.keepalive)
+
             self.special_login_handler()
             if self.verbose:
                 print("Interactive SSH session established")

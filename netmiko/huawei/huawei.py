@@ -120,11 +120,11 @@ class HuaweiSSH(HuaweiBase):
 class HuaweiTelnet(HuaweiBase):
     """Huawei Telnet driver."""
 
-    def telnet_login(
+    def telnet_login2(
         self,
         pri_prompt_terminator=r"]\s*$",
         alt_prompt_terminator=r">\s*$",
-        username_pattern=r"(?:user:|username|login|user name)",
+        username_pattern=r"(?:user:|sername|login|user name)",
         pwd_pattern=r"assword",
         delay_factor=1,
         max_loops=20,
@@ -153,11 +153,12 @@ class HuaweiTelnet(HuaweiBase):
                 output = self.read_until_pattern(pattern=pwd_pattern, re_flags=re.I)
                 return_msg += output
                 self.write_channel(self.password + self.TELNET_RETURN)
-
+                 
+                print(return_msg)
                 # Waiting for combined output
                 output = self.read_until_pattern(pattern=combined_pattern)
                 return_msg += output
-
+                
                 # Search for password change prompt, send "N"
                 if re.search(password_change_prompt, output):
                     self.write_channel("N" + self.TELNET_RETURN)
